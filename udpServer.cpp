@@ -13,6 +13,7 @@
 #include "wrappers.h"
 #include "dijkstra.h"
 #include "udpServer.h"
+#include "validation.h"
 
 
 extern int MAX_LEN;
@@ -22,14 +23,15 @@ int UDP_PORT = 23101;
 
 using namespace std;
 
+// Функция запуска сервера (UDP)
 void startUdpServer() {
     // Открытие UDP сокета
     int udp_fd = Socket(AF_INET, SOCK_DGRAM, 0);
 
     struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(UDP_PORT);
     addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(UDP_PORT);
 
     constexpr int reuse = 1;
     if (setsockopt(udp_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
@@ -101,6 +103,27 @@ void startUdpServer() {
             recvfrom(udp_fd, &end, sizeof(end), 0,
                     (struct sockaddr*)&client_addr, &addr_len);
 
+
+            // Проверяем на минимальное и максимальное кол-во вершин и рёбер
+            if (!numberVertexes(graph, 0)) {
+                sendto(udp_fd, NULL, 0, 0,  // чтобы доложить клиенту о провале
+                           (struct sockaddr*)&client_addr, addr_len);
+                continue;
+            }
+            // Проверяем на вхождение вершин в граф
+            if (!isVertexesInBorder(start, end, graph, 0)) {
+                sendto(udp_fd, NULL, 0, 0,
+                           (struct sockaddr*)&client_addr,addr_len);
+                continue;
+            }
+            // Проверка на связность графа (вершины должны быть соединены друг с другом, если одна соединена с другой)
+            if (!connectivityVertexes(graph, 0)) {
+                sendto(udp_fd, NULL, 0, 0,
+                           (struct sockaddr*)&client_addr, addr_len);
+                continue;
+            }
+
+            cout << "alg" << endl;
             // Выполняем алгоритм Дейкстры
             res = dijkstra(graph, start, end);
 
@@ -109,6 +132,7 @@ void startUdpServer() {
             for (const auto& v : res.second) {
                 result_str += to_string(v) + ",";
             }
+            cout << "resp" << endl;
 
             sendto(udp_fd, result_str.c_str(), result_str.length() + 1, 0,
                    (struct sockaddr*)&client_addr, addr_len);

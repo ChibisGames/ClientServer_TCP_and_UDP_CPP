@@ -12,7 +12,7 @@
 
 #include "interaction.h"
 #include "wrappers.h"
-#include "dijkstra.h"
+#include "validation.h"
 #include "udpClient.h"
 
 extern int MAX_LEN;
@@ -28,13 +28,14 @@ struct UDPPacket {
     socklen_t addr_len;
 };
 
-void startUdpClient() {
+// Функция запуска клиента (UDP)
+void startUdpClient(const char *ip, int port) {
     int client_fd = Socket(AF_INET, SOCK_DGRAM, 0);
 
     struct sockaddr_in server_addr = {0};
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(UDP_PORT);
-    Inet_pton(AF_INET, "127.0.0.1", (void*)&server_addr.sin_addr);
+    server_addr.sin_port = htons(port);
+    Inet_pton(AF_INET, ip, (void*)&server_addr.sin_addr);
 
     socklen_t addr_len = sizeof(server_addr);
     char buffer[MAX_LEN];
@@ -59,13 +60,20 @@ void startUdpClient() {
 
         graph.clear();
         if (!inputTp) {
-            //inputGraphUDP(graph);
+            inputGraphUDP(graph);
         } else {
             readGraphUDP(graph);
         }
 
         bzero(buffer, MAX_LEN);
         startEnd = startEndNode(buffer);
+
+        // Проверяем на минимальное и максимальное кол-во вершин и рёбер
+        if (!numberVertexes(graph, 1)) continue;
+        // Проверяем на вхождение вершин в граф
+        if (!isVertexesInBorder(startEnd.first, startEnd.second, graph, 1)) continue;
+        // Проверка на связность графа (вершины должны быть соединены друг с другом, если одна соединена с другой)
+        if (!connectivityVertexes(graph, 1)) continue;
 
         // Отправляем команду "graph" серверу
         strcpy(buffer, "graph");
@@ -77,6 +85,7 @@ void startUdpClient() {
         recvfrom(client_fd, buffer, MAX_LEN, 0,
                 (struct sockaddr*)&server_addr, &addr_len);
 
+        // В случае потери данных начинаем процесс задания графа с начала
         if (strcmp(buffer, "OK") != 0) {
             printf("Ошибка связи с сервером\n");
             continue;
@@ -91,7 +100,7 @@ void startUdpClient() {
                                     (struct sockaddr*)&server_addr, &addr_len);
 
         if (recv_len > 0) {
-            // Парсим результат
+            // Парсим результат (строчный вид преобразовываем в вектор)
             size_t i = 0;
             string dig;
             res.second.clear();
@@ -125,6 +134,8 @@ void startUdpClient() {
             }
 
             printResult(res, startEnd.first, startEnd.second);
+        }else {
+            cout << "Не удалось получить результат от сервера" << endl;
         }
     }
 

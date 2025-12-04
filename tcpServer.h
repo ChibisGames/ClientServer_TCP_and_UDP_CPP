@@ -16,5 +16,6 @@ vector<vector<int>> &receiveGraphTCP(int &fd, vector<vector<int>> &graph, int &s
 
 void sendResultTCP(const int &fd, const pair<int, vector<int>>& input);
 
+void closeTCP(int &fd);
 
 #endif //CLIENTSERVER_TCPSERVER_H

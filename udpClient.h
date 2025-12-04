@@ -8,7 +8,7 @@
 using namespace std;
 
 
-void startUdpClient();
+void startUdpClient(const char *ip, int port);
 
 void sendGraphUDP(int fd, struct sockaddr_in& server_addr, socklen_t addr_len,
                   const vector<vector<int>>& graph, int start, int end);

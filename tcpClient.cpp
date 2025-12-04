@@ -14,6 +14,7 @@
 #include <string>
 
 #include "tcpClient.h"
+#include "validation.h"
 #include "interaction.h"
 #include "wrappers.h"
 
@@ -27,16 +28,17 @@ using namespace std;
 
 mutex cout_mutex;
 
-void startTcpClient() {
+// Функция запуска клиента (TCP)
+void startTcpClient(const char *ip, int port) {
     int clientfd = Socket(AF_INET, SOCK_STREAM, 0);
 
     struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(TCP_PORT);
+    addr.sin_port = htons(port);
 
     Connect(clientfd, (struct sockaddr*)&addr, sizeof addr);
 
-    Inet_pton(AF_INET, "127.0.0.1", (void*)&addr.sin_addr);
+    Inet_pton(AF_INET, ip, (void*)&addr.sin_addr);
 
     ssize_t brecv;
     char buffer[MAX_LEN];
@@ -61,7 +63,14 @@ void startTcpClient() {
         bzero(buffer, MAX_LEN);
         startEnd = startEndNode(buffer); //Осторожно! Меняет buffer (хотя всё равно)!
 
-        exitTCP(clientfd, buffer, MAX_LEN);
+        // Как буд-то невозможно, чтобы TCP что-то потерял
+        // Проверяем на минимальное и максимальное кол-во вершин и рёбер
+        if (!numberVertexes(graph, 1)) continue;
+        // Проверяем на вхождение вершин в граф
+        if (!isVertexesInBorder(startEnd.first, startEnd.second, graph, 1)) continue;
+        // Проверка на связность графа (вершины должны быть соединены друг с другом, если одна соединена с другой)
+        if (!connectivityVertexes(graph, 1)) continue;
+
 
         send(clientfd, buffer, MAX_LEN, 0);
         sendGraphTCP(clientfd, graph, startEnd.first, startEnd.second);

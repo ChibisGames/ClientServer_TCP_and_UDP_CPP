@@ -8,7 +8,7 @@ extern int MAX_LEN;
 using namespace std;
 
 
-void startTcpClient();
+void startTcpClient(const char *ip, int port);
 
 void sendGraphTCP(const int &fd, const vector<vector<int>>& graph, const int &start, const int &end);
 

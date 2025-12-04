@@ -1,5 +1,6 @@
 #include <vector>
 #include <iostream>
+#include <algorithm>
 
 #include "dijkstra.h"
 using namespace std;
@@ -14,6 +15,8 @@ vector<vector<int>> adj = {
     {3}        // для 4
 };
 */
+
+// Алгоритм Дейкстры
 pair<int, vector<int>> dijkstra(vector<vector<int>>& graph, int &start, int &end) {
     auto n = graph.size();
 
@@ -50,6 +53,8 @@ pair<int, vector<int>> dijkstra(vector<vector<int>>& graph, int &start, int &end
     ranges::reverse(path);
 
     pair<int, vector<int>> out;
+    // Так же для оптимизации возвращаем только длину пути (+ экономия на месте,
+    // так как вместо vector<long long> мы хранм просто int)
     out.first = static_cast<int>(dist[end]); // длина пути
     out.second = path;
     return out;

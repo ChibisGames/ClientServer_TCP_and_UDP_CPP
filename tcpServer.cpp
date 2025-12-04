@@ -14,9 +14,9 @@
 #include <string>
 
 #include "tcpServer.h"
-#include "interaction.h"
 #include "wrappers.h"
 #include "dijkstra.h"
+#include "validation.h"
 
 extern int MAX_LEN;
 
@@ -28,6 +28,7 @@ using namespace std;
 
 mutex cout_mutex;
 
+// Функция запуска сервера (TCP)
 void startTcpServer() {
     // Открытие tcp сокета
     int tcp_fd = Socket(AF_INET, SOCK_STREAM, 0);
@@ -68,10 +69,11 @@ void startTcpServer() {
         client_threads.emplace_back([clientfd, clientAddr]() {
             handleTcpClient(clientfd, clientAddr);
         });
+        //TODO очистку закрытых потоков сделать
     }
     client_threads.clear();
 
-    // Ждем завершения всех клиентских потоков
+    // Ждем завершения всех клиентских потоков (хотя она и вряд ли сработает)
     for (auto& thread : client_threads) {
         if (thread.joinable()) {
             thread.join();
@@ -109,17 +111,29 @@ void handleTcpClient(int clientfd, struct sockaddr_in clientAddr) {
 
         if (brecv == 1) {
             graph = receiveGraphTCP(clientfd, graph, start, end);
+            // Проверяем на минимальное и максимальное кол-во вершин и рёбер
+            if (!numberVertexes(graph, 0)) {
+                closeTCP(clientfd);
+                continue;
+            }
+            // Проверяем на вхождение вершин в граф
+            if (!isVertexesInBorder(start, end, graph, 0)) {
+                closeTCP(clientfd);
+                continue;
+            }
+            // Проверка на связность графа (вершины должны быть соединены друг с другом, если одна соединена с другой)
+            if (!connectivityVertexes(graph, 0)) {
+                closeTCP(clientfd);
+                continue;
+            }
 
             res = dijkstra(graph, start, end);
-
             sendResultTCP(clientfd, res);
         }
     }
-
-    close(clientfd);
 }
 
-// Приём графа на сервере:
+// Приём графа на сервер
 vector<vector<int>> &receiveGraphTCP(int &fd, vector<vector<int>> &graph, int &start, int &end) {
     size_t size;
     //time_t rawtime;
@@ -140,6 +154,7 @@ vector<vector<int>> &receiveGraphTCP(int &fd, vector<vector<int>> &graph, int &s
     return graph;
 }
 
+// Отправка результата алгоритма от сервера клиенту
 void sendResultTCP(const int &fd, const pair<int, vector<int>>& input) {
     string buffer;
     /*
@@ -153,7 +168,11 @@ void sendResultTCP(const int &fd, const pair<int, vector<int>>& input) {
     for (const auto v : input.second) {
         buffer+= to_string(v) + ",";
     }
-    cout << buffer << endl;
+    //cout << buffer << endl;
     send(fd, buffer.c_str(), buffer.length() + 1, 0);
 }
 
+void closeTCP(int &fd) {
+    printf("Клиент %d покинул сервер (принудительное отключение)\n", fd);
+    close(fd);
+}

@@ -12,6 +12,7 @@
 
 using namespace std;
 
+// Функция ввода терминала
 void scanfAll(char *buffer, const int &bufferLen, FILE *stream) {
     fgets(buffer, bufferLen, stream);
     buffer[strcspn(buffer, "\n")] = '\0';
@@ -23,7 +24,7 @@ void scanfAll(char *buffer, const int &bufferLen, FILE *stream) {
     }
 }
 
-// Отключение клиента
+// Отключение клиента (TCP)
 void exitTCP(int &fd, const char *buffer, const int &bufferLen) {
     if (strcmp(buffer, "exit") == 0) {
         send(fd, buffer, bufferLen, 0);
@@ -33,6 +34,7 @@ void exitTCP(int &fd, const char *buffer, const int &bufferLen) {
     }
 }
 
+// Отключение клиента (UDP)
 void exitUDP(const char *buffer) {
     if (strcmp(buffer, "exit") == 0) {
         printf("Клиент покинул сервер");
@@ -40,6 +42,7 @@ void exitUDP(const char *buffer) {
     }
 }
 
+// Запрос клиента описания графа
 int inputType(char *buffer, const int &bufferLen, bool &flag) {
     int type = -1;
     while (type == -1) {
@@ -55,13 +58,7 @@ int inputType(char *buffer, const int &bufferLen, bool &flag) {
     return type;
 }
 
-bool isTwoDigit(const char *buffer) {
-    bool flag = true;
-    if (!isdigit(buffer[1])) return isdigit(buffer[0]);
-    for (int i = 0; i < 2; i++) {flag *= isdigit(buffer[i]);}
-    return flag;
-}
-
+// Вывод результата работы алгоритма клиенту
 void printResult(pair<int, vector<int>> &result, int &start, int &end) {
     // Вывод расстояний
     int dist = result.first;
@@ -80,7 +77,7 @@ void printResult(pair<int, vector<int>> &result, int &start, int &end) {
     */
 
     // Восстановление и вывод путей
-    cout << "\nРезультат пути (из " << start << " до " << end << "): ";
+    cout << "Результат пути (из " << start << " до " << end << "): ";
     if (dist == -1) cout << " путь между вершинами не существует";
     else {
         for (size_t j = 0; j < path.size(); ++j) {
@@ -89,7 +86,7 @@ void printResult(pair<int, vector<int>> &result, int &start, int &end) {
         }
         cout << '\n';
     }
-    cout << '\n';
+    cout << endl;
     /*
     // Перебор всех вариантов
     for (int i = 0; i < n; ++i) {
@@ -110,6 +107,7 @@ void printResult(pair<int, vector<int>> &result, int &start, int &end) {
     */
 }
 
+// Ручной ввод описания графа
 void inputGraphTCP(int &fd, vector<vector<int>> &graph) {
     int n = -1;
     int vert;
@@ -148,6 +146,46 @@ void inputGraphTCP(int &fd, vector<vector<int>> &graph) {
     }
 }
 
+
+void inputGraphUDP(vector<vector<int> > &graph) {
+    int n = -1;
+    int vert;
+    char buffer[4] = {0};
+    while (true) {
+        cout << "Введите число вершин: ";
+        scanfAll(buffer, MAX_LEN, stdin);
+
+        exitUDP(buffer);
+
+        if (isTwoDigit(buffer)) {n = atoi(buffer); break;}
+    }
+    graph.resize(n);
+    for (int i = 0; i < n; i++) {
+        while (true) {
+            cout << "Как много вершин соединено с вершиной " << i << "? ";
+            bzero(buffer, 4);
+            scanfAll(buffer, MAX_LEN, stdin);
+
+            exitUDP(buffer);
+
+            if (isTwoDigit(buffer)) {vert = atoi(buffer); break;}
+        }
+        for (int j = 0; j < vert; j++) {
+
+            while (true) {
+                cout << j + 1 << " соединена с " << i << ": ";
+                bzero(buffer, 4);
+                scanfAll(buffer, MAX_LEN, stdin);
+
+                exitUDP(buffer);
+
+                if (isTwoDigit(buffer)) {graph[i].push_back(atoi(buffer)); break;}
+            }
+        }
+    }
+}
+
+// Чтение описания графа из файла (для TCP)
 void readGraphTCP(int &fd, vector<vector<int>> &graph) {
     int l = 128;
     char filename[128] = {0};
@@ -174,11 +212,17 @@ void readGraphTCP(int &fd, vector<vector<int>> &graph) {
 
             vector<int> row;
             stringstream ss(line);
-            int value;
+            string token;
 
-            // Читаем числа из строки
-            while (ss >> value) {
-                row.push_back(value);
+            while (ss >> token) {
+                // Проверка: все символы должны быть цифрами
+                for (char c : token) {
+                    if (!isdigit(c)) {
+                        cout << "Неверный формат ввода графа" << endl;
+                        exitTCP(fd, ex, 4);
+                    }
+                }
+                row.push_back(std::stoi(token));
             }
 
             if (!row.empty()) {
@@ -194,6 +238,7 @@ void readGraphTCP(int &fd, vector<vector<int>> &graph) {
     }
 }
 
+// Чтение описания графа из файла (для UDP)
 void readGraphUDP(vector<vector<int>> &graph) {
     int l = 128;
     char filename[128] = {0};
@@ -220,11 +265,17 @@ void readGraphUDP(vector<vector<int>> &graph) {
 
             vector<int> row;
             stringstream ss(line);
-            int value;
+            string token;
 
-            // Читаем числа из строки
-            while (ss >> value) {
-                row.push_back(value);
+            while (ss >> token) {
+                // Проверка: все символы должны быть цифрами
+                for (char c : token) {
+                    if (!isdigit(c)) {
+                        cout << "Неверный формат ввода графа" << endl;
+                        exitUDP(ex);
+                    }
+                }
+                row.push_back(std::stoi(token));
             }
 
             if (!row.empty()) {
@@ -233,6 +284,7 @@ void readGraphUDP(vector<vector<int>> &graph) {
         }
         file.close();
     }
+
     catch (const exception& e) {
         // Обработка ошибок
         printf("Ошибка при чтении графа: %s\n", e.what());
@@ -241,6 +293,7 @@ void readGraphUDP(vector<vector<int>> &graph) {
     }
 }
 
+// Ввод начальной и конечной вершины
 pair<int, int> startEndNode(char *buffer) {
     int numberLen = 2   + 1;
     char start[numberLen];
@@ -266,3 +319,11 @@ pair<int, int> startEndNode(char *buffer) {
 }
 
 
+
+// Проверка на однозначное-двузначное число (по ТЗ число <= 20, но реализовано на <100)
+bool isTwoDigit(const char *buffer) {
+    bool flag = true;
+    if (!isdigit(buffer[1])) return isdigit(buffer[0]);
+    for (int i = 0; i < 2; i++) {flag *= isdigit(buffer[i]);}
+    return flag;
+}
