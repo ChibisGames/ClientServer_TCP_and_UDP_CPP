@@ -4,6 +4,6 @@
 using namespace std;
 
 
-void startUdpServer();
+void startUdpServer(int port);
 
 #endif //CLIENTSERVER_UDPSERVER_H

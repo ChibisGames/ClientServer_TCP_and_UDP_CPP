@@ -8,7 +8,7 @@
 using namespace std;
 
 
-void startTcpServer();
+void startTcpServer(int port);
 
 void handleTcpClient(int clientfd, struct sockaddr_in clientAddr);
 

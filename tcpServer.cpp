@@ -20,7 +20,7 @@
 
 extern int MAX_LEN;
 
-int TCP_PORT = 23101;
+//int TCP_PORT = 23101;
 int MAX_LISTEN = 7;
 //#include <ctime>
 
@@ -29,13 +29,13 @@ using namespace std;
 mutex cout_mutex;
 
 // Функция запуска сервера (TCP)
-void startTcpServer() {
+void startTcpServer(int port) {
     // Открытие tcp сокета
     int tcp_fd = Socket(AF_INET, SOCK_STREAM, 0);
 
     struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(TCP_PORT);
+    addr.sin_port = htons(port);
     addr.sin_addr.s_addr = INADDR_ANY;
 
     constexpr int reuse = 1;
@@ -52,7 +52,7 @@ void startTcpServer() {
 
     {
         lock_guard<mutex> lock(cout_mutex);
-        printf("TCP сервер начал работу на порте %d\n", TCP_PORT);
+        printf("TCP сервер начал работу на порте %d\n", port);
     }
 
     while (true) {

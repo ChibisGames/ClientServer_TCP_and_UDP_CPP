@@ -18,20 +18,20 @@
 
 extern int MAX_LEN;
 
-int UDP_PORT = 23101;
+//int UDP_PORT = 23101;
 //#include <ctime>
 
 using namespace std;
 
 // Функция запуска сервера (UDP)
-void startUdpServer() {
+void startUdpServer(int port) {
     // Открытие UDP сокета
     int udp_fd = Socket(AF_INET, SOCK_DGRAM, 0);
 
     struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(UDP_PORT);
+    addr.sin_port = htons(port);
 
     constexpr int reuse = 1;
     if (setsockopt(udp_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
@@ -42,7 +42,7 @@ void startUdpServer() {
 
     Bind(udp_fd, (struct sockaddr *) &addr, sizeof addr);
 
-    printf("UDP сервер начал работу на порте %d\n", UDP_PORT);
+    printf("UDP сервер начал работу на порте %d\n", port);
 
     char buffer[MAX_LEN];
     struct sockaddr_in client_addr;
@@ -69,7 +69,8 @@ void startUdpServer() {
 
         // Обработка команды выхода
         if (strcmp(buffer, "exit") == 0) {
-            printf("Клиент отключился\n");
+            printf("Клиент %s:%d отключился\n",
+               inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
             continue;
         }
 
@@ -123,7 +124,6 @@ void startUdpServer() {
                 continue;
             }
 
-            cout << "alg" << endl;
             // Выполняем алгоритм Дейкстры
             res = dijkstra(graph, start, end);
 
@@ -132,12 +132,12 @@ void startUdpServer() {
             for (const auto& v : res.second) {
                 result_str += to_string(v) + ",";
             }
-            cout << "resp" << endl;
 
             sendto(udp_fd, result_str.c_str(), result_str.length() + 1, 0,
                    (struct sockaddr*)&client_addr, addr_len);
 
-            printf("Результат отправлен клиенту\n");
+            printf("Результат отправлен клиенту %s:%d\n",
+               inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         }
     }
 

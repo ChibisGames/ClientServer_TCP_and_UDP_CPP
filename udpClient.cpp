@@ -17,7 +17,7 @@
 
 extern int MAX_LEN;
 
-int UDP_PORT = 23101;
+//int UDP_PORT = 23101;
 //#include <ctime>
 
 using namespace std;
@@ -80,10 +80,50 @@ void startUdpClient(const char *ip, int port) {
         sendto(client_fd, buffer, strlen(buffer), 0,
                (struct sockaddr*)&server_addr, addr_len);
 
-        // Ждем подтверждения
-        bzero(buffer, MAX_LEN);
-        recvfrom(client_fd, buffer, MAX_LEN, 0,
-                (struct sockaddr*)&server_addr, &addr_len);
+        // Блок ожидания подтверждения связи с сервером
+        bool received_response = false;
+        int attempts = 0;
+        const int max_attempts = 3;
+        const int timeout_seconds = 3;
+
+        while (attempts < max_attempts && !received_response) {
+            // Устанавливаем таймаут на сокет
+            struct timeval tv;
+            tv.tv_sec = timeout_seconds;
+            tv.tv_usec = 0;
+            setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+            bzero(buffer, MAX_LEN);
+            ssize_t recv_len = recvfrom(client_fd, buffer, MAX_LEN, 0,
+                                        (struct sockaddr*)&server_addr, &addr_len);
+
+            if (recv_len > 0) {
+                received_response = true;
+            } else {
+                attempts++;
+                if (attempts < max_attempts) {
+                    cout << "Не получен ответ от сервера. Повторная попытка "
+                         << attempts << " из " << max_attempts << "..." << endl;
+
+                    // Повторно отправляем команду перед следующей попыткой
+                    sendto(client_fd, "graph", strlen("graph"), 0,
+                           (struct sockaddr*)&server_addr, addr_len);
+                }
+            }
+        }
+
+        // Сбрасываем таймаут после попыток
+        struct timeval tv;
+        tv.tv_sec = 0;
+        tv.tv_usec = 0;
+        setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+        if (!received_response) {
+            cout << "Проблема ожидания: сервер не отвечает после "
+                 << max_attempts << " попыток." << endl;
+            continue; // Переходим к следующей итерации цикла
+        }
+        // Блок ожидания подтверждения связи с сервером заканчивается
 
         // В случае потери данных начинаем процесс задания графа с начала
         if (strcmp(buffer, "OK") != 0) {

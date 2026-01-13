@@ -302,12 +302,12 @@ pair<int, int> startEndNode(char *buffer) {
     bzero(start, numberLen);
     bzero(end, numberLen);
     while (true) {
-        printf("Введите начальную вершину (двухзначное число): ");
+        printf("Введите начальную вершину (однозначное или двухзначное число): ");
         scanfAll(start, numberLen, stdin);
         if (isTwoDigit(start)) break;
     }
     while (true) {
-        printf("Введите конечную вершину (двухзначное число): ");
+        printf("Введите конечную вершину (однозначное или двухзначное число): ");
         scanfAll(end, numberLen, stdin);
         if (isTwoDigit(end)) break;
     }

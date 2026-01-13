@@ -20,7 +20,7 @@
 
 extern int MAX_LEN;
 
-int TCP_PORT = 23101;
+//int TCP_PORT = 23101;
 int MAX_LISTEN = 7;
 //#include <ctime>
 

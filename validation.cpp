@@ -72,7 +72,7 @@ bool isVertexesInBorder(int &start, int &end, vector<vector<int>> &graph, int pr
 // Проверка на минимальное и максимальное кол-во вершин и рёбер
 bool numberVertexes(vector<vector<int>> &graph, int programme) {
     if (graph.size() > 20) {
-        if (programme == 1) cout << "Граф должен содержать не более 20 вершин" << endl;
+        if (programme == 1) cout << "Граф должен содержать не более 20 вершин" << endl << endl;
         return false;
     }
     int edges = 0;
@@ -85,7 +85,7 @@ bool numberVertexes(vector<vector<int>> &graph, int programme) {
     // Меньше 6 вершин - это понятно, а вот с рёбрами немного сложнее: так как граф неориентированный,
     // то вектор смежности учитывает 2 прохода между вершинами (петля случай отдельный) - значит поднимем лимит до 12
     if (graph.size() < 6 || edges < 12) {
-        if (programme == 1) cout << "Граф должен содержать не менее 6 вершин и 6 рёбер" << endl;
+        if (programme == 1) cout << "Граф должен содержать не менее 6 вершин и 6 рёбер" << endl << endl;
         return false;
     }
     return true;
@@ -98,7 +98,7 @@ bool connectivityVertexes(vector<vector<int>> &graph, int programme) {
         for (const int j : graph[i]) {
             auto it = ranges::find(graph[j], i);
             if (it == graph[j].end()) {
-                if (programme == 1) cout << "Неверный формат ввода графа (ошибка соединения вершин)" << endl;
+                if (programme == 1) cout << "Неверный формат ввода графа (ошибка соединения вершин)" << endl << endl;
                 return false;
             }
         }
