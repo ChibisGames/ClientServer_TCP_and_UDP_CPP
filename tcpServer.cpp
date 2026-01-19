@@ -69,7 +69,6 @@ void startTcpServer(int port) {
         client_threads.emplace_back([clientfd, clientAddr]() {
             handleTcpClient(clientfd, clientAddr);
         });
-        //TODO очистку закрытых потоков сделать
     }
     client_threads.clear();
 
